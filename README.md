@@ -78,7 +78,7 @@ Nano Notes is a modern AI-powered notes application built using the MERN stack w
 ## 1️⃣ Clone Repository
 
 ```bash
-git clone YOUR_REPO_URL
+git clone https://github.com/Ashu8477/MERN-AI-NOTES-APP.git
 cd MERN-AI-NOTES-APP
 ```
 
