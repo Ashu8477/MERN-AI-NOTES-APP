@@ -1,19 +1,22 @@
 const Note = require('../models/Note');
 
 const OLLAMA_URL = 'http://localhost:11434/api/generate';
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 // POST /api/ai/notes/:id/summarize
 const summarizeNote = async (req, res) => {
   try {
     const note = await Note.findById(req.params.id);
 
     if (!note) {
-      return res.status(404).json({ message: 'Note not found' });
+      return res.status(404).json({
+        message: 'Note not found',
+      });
     }
 
     if (note.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized' });
+      return res.status(403).json({
+        message: 'Not authorized',
+      });
     }
 
     const prompt = `
@@ -39,7 +42,9 @@ ${note.content}
       // TRY OLLAMA FIRST
       const response = await fetch(OLLAMA_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           model: 'llama3',
           prompt,
@@ -61,14 +66,31 @@ ${note.content}
     } catch (err) {
       console.log('Using Gemini fallback...');
 
-      // FALLBACK TO GEMINI
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-pro',
-      });
+      // GEMINI FALLBACK
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+          }),
+        },
+      );
 
-      const result = await model.generateContent(prompt);
+      const geminiData = await geminiResponse.json();
 
-      rawResponse = result.response.text();
+      rawResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
     }
 
     const summaryMatch = rawResponse.match(/SUMMARY:\s*(.*)/i);
@@ -106,7 +128,10 @@ ${note.content}
     res.json(note);
   } catch (err) {
     console.error('Nano summarize error:', err);
-    res.status(500).json({ message: 'Failed to summarize note' });
+
+    res.status(500).json({
+      message: 'Failed to summarize note',
+    });
   }
 };
 
