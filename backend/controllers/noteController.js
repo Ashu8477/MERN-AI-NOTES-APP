@@ -83,7 +83,7 @@ const shareNote = async (req, res) => {
   await note.save();
 
   res.json({
-    shareUrl: `http://localhost:5173/shared/${note.shareId}`,
+    shareUrl: `https://mern-ai-notes-app.vercel.app/shared/${note.shareId}`,
   });
 };
 
@@ -108,5 +108,5 @@ module.exports = {
   updateNote,
   deleteNote,
   shareNote,
-  getSharedNote
+  getSharedNote,
 };
