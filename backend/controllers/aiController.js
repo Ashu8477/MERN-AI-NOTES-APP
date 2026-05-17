@@ -1,7 +1,8 @@
 const Note = require('../models/Note');
 
 const OLLAMA_URL = 'http://localhost:11434/api/generate';
-
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // POST /api/ai/notes/:id/summarize
 const summarizeNote = async (req, res) => {
   try {
@@ -32,27 +33,43 @@ NOTE:
 ${note.content}
 `.trim();
 
-    const response = await fetch(OLLAMA_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama3',
-        prompt,
-        stream: false,
-        options: {
-          temperature: 0, // 🔥 reduce creativity
-          top_p: 0.8,
-        },
-      }),
-    });
+    let rawResponse = '';
 
-    if (!response.ok) {
-      throw new Error('Nano model failed');
+    try {
+      // TRY OLLAMA FIRST
+      const response = await fetch(OLLAMA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama3',
+          prompt,
+          stream: false,
+          options: {
+            temperature: 0,
+            top_p: 0.8,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ollama failed');
+      }
+
+      const data = await response.json();
+
+      rawResponse = data.response?.trim();
+    } catch (err) {
+      console.log('Using Gemini fallback...');
+
+      // FALLBACK TO GEMINI
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+      });
+
+      const result = await model.generateContent(prompt);
+
+      rawResponse = result.response.text();
     }
-
-    const data = await response.json();
-
-    const rawResponse = data.response?.trim();
 
     const summaryMatch = rawResponse.match(/SUMMARY:\s*(.*)/i);
 
