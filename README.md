@@ -2,6 +2,9 @@
 
 Nano Notes is a modern AI-powered notes application built using the MERN stack with intelligent note summarization, action item extraction, public sharing, autosave, analytics dashboard, and advanced search/filtering.
 
+
+<img src="./frontend/public/mern-ai-notes.png"/>
+
 ---
 
 ## ✨ Features
